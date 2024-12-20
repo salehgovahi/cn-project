@@ -31,7 +31,6 @@ function encrypt(message, key) {
 
 app.post('/send', async (req, res) => {
     const { message } = req.body;
-    console.log(environments.KEY3);
     const decryptedMessage = decrypt(message, keys.key3);
     console.log(`Node 3 decrypted message: ${decryptedMessage}`);
 

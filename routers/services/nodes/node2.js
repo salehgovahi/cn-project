@@ -31,12 +31,11 @@ function encrypt(message, key) {
 
 app.post('/send', async (req, res) => {
     const { message } = req.body;
-    console.log(environments.KEY2);
     
     const decryptedMessage = decrypt(message, keys.key2);
     console.log(`Node 2 decrypted message: ${decryptedMessage}`);
 
-    const externalResponse = await axios.post(`http://localhost:${environments.PORT3}/send`, { message: decryptedMessage });
+    const externalResponse = await axios.post(`http://${environments.HOST3}:${environments.PORT3}/send`, { message: decryptedMessage });
     console.log(`Node 2 decrypted result: ${encrypt(externalResponse.data, keys.key2)}`);
     res.json(encrypt(externalResponse.data, keys.key2));
 });

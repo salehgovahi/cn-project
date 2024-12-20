@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const crypto = require('crypto');
 const axios = require('axios');
 
-const environments = require('../../configs/environments')
+const environments = require('../../configs/environments');
 
 const keys = {
     key1: 'key1_secret_string',
@@ -29,13 +29,14 @@ function encrypt(message, key) {
     return encrypted;
 }
 
-
 app.post('/send', async (req, res) => {
     const { message } = req.body;
     const decryptedMessage = decrypt(message, keys.key1);
     console.log(`Node 1 decrypted message: ${decryptedMessage}`);
 
-    const externalResponse = await axios.post(`http://localhost:${environments.PORT2}/send`, { message: decryptedMessage });
+    const externalResponse = await axios.post(`http://${environments.HOST2}:${environments.PORT2}/send`, {
+        message: decryptedMessage
+    });
     console.log(`Node 1 decrypted result: ${encrypt(externalResponse.data, keys.key1)}`);
     res.json(encrypt(externalResponse.data, keys.key1));
 });
