@@ -1,15 +1,15 @@
-// chatServer.js
-
+require('dotenv').config({ path: './.env' });
+const environments = require('./configs/environments');
 const WebSocket = require('ws');
 
-const wss = new WebSocket.Server({ host: '0.0.0.0', port: 8080 });
+const wss = new WebSocket.Server({ host: environments.WEBSOCKET_HOST, port: environments.WEBSOCKET_PORT });
 
 const clients = new Set();
-const messageHistory = []; // Array to store message history
+const messageHistory = [];
 
 // Broadcast message to all connected clients
 function broadcast(data, sender) {
-    clients.forEach(client => {
+    clients.forEach((client) => {
         if (client !== sender && client.readyState === WebSocket.OPEN) {
             client.send(data);
         }
@@ -27,7 +27,7 @@ function sendMessageHistory(ws) {
 wss.on('connection', (ws) => {
     console.log('New client connected');
     clients.add(ws);
-    
+
     // Send message history to the newly connected client
     sendMessageHistory(ws);
 
@@ -42,7 +42,7 @@ wss.on('connection', (ws) => {
                     // Store message in history
                     const chatMessage = { username, content };
                     messageHistory.push(chatMessage);
-                    
+
                     // Broadcast the new chat message
                     const broadcastMessage = JSON.stringify({ type: 'chat', ...chatMessage });
                     broadcast(broadcastMessage, ws);
@@ -70,4 +70,4 @@ wss.on('error', (error) => {
     console.error('WebSocket server error:', error);
 });
 
-console.log('WebSocket chat server is running on ws://0.0.0.0:8080');
+console.log(`WebSocket chat server is running on ws://${environments.WEBSOCKET_HOST}:${environments.WEBSOCKET_PORT}`);
