@@ -1,9 +1,5 @@
-// client.js
-const axios = require('axios');
+const net = require('net');
 const crypto = require('crypto');
-require('dotenv').config({ path:'.env' })
-
-const environments = require('./configs/environments')
 
 const keys = {
     key1: 'key1_secret_string',
@@ -11,30 +7,43 @@ const keys = {
     key3: 'key3_secret_string'
 };
 
-function encrypt(message, key) {
-    const cipher = crypto.createCipher('aes-256-cbc', key);
-    let encrypted = cipher.update(message, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    return encrypted;
-}
 function decrypt(message, key) {
+    console.log(key);
+    
     const decipher = crypto.createDecipher('aes-256-cbc', key);
     let decrypted = decipher.update(message, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;
 }
 
-async function main() {
-    const destinationUrl = 'Hello';
-    // Encrypt the message
-    const encryptedMessage = encrypt(encrypt(encrypt(destinationUrl, keys.key3), keys.key2), keys.key1);
-    // console.log(`Sending Encrypted Message: ${encryptedMessage}`);
+function encrypt(message, key) {
+    const cipher = crypto.createCipher('aes-256-cbc', key);
+    let encrypted = cipher.update(message, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return encrypted;
+}
 
-    const response = await axios.post(`http://${environments.HOST1}:${environments.PORT1}/send`, { message: encryptedMessage });
-    // console.log("------");
-    // console.log(response.data);
-    const decryptedMessage = decrypt(decrypt(decrypt(response.data, keys.key1), keys.key2), keys.key3);
-    console.log(`Response from Server: ${decryptedMessage}`);
+async function main() {
+    const destinationUrl = 'https://google.com'; // Change to your desired URL
+    const encryptedMessage = encrypt(encrypt(encrypt(destinationUrl, keys.key3), keys.key2), keys.key1);
+
+    const client = net.createConnection({ host: 'localhost', port: 8001 }, () => {
+        client.write(encryptedMessage);
+    });
+
+    client.on('data', (data) => {
+        console.log("hell");
+        
+        console.log(data.toString());
+        console.log("hell");
+        
+        result = decrypt(decrypt(decrypt(data.toString(), keys.key1), keys.key2), keys.key3);
+        console.log(`Response from Server: ${result}`);
+    });
+
+    client.on('error', (err) => {
+        console.error(err);
+    });
 }
 
 main();

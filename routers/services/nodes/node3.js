@@ -1,21 +1,14 @@
-// node3.js
-const express = require('express');
-const bodyParser = require('body-parser');
+const net = require('net');
 const crypto = require('crypto');
 const axios = require('axios');
 
-const environments = require('../../configs/environments')
-
 const keys = {
-    key1: 'key1_secret_string',
-    key2: 'key2_secret_string',
-    key3: 'key3_secret_string'
+    key3: 'key3_secret_string',
 };
 
-const app = express();
-app.use(bodyParser.json());
-
 function decrypt(message, key) {
+    console.log(key);
+    
     const decipher = crypto.createDecipher('aes-256-cbc', key);
     let decrypted = decipher.update(message, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
@@ -29,21 +22,22 @@ function encrypt(message, key) {
     return encrypted;
 }
 
-app.post('/send', async (req, res) => {
-    const { message } = req.body;
-    const decryptedMessage = decrypt(message, keys.key3);
-    console.log(`Node 3 decrypted message: ${decryptedMessage}`);
+const server = net.createServer(async (socket) => {
+    socket.on('data', async (data) => {
+        const message = decrypt(data.toString(), keys.key3);
+        console.log(`Node 3 received message: ${message}`);
 
-    try {
-        // const externalResponse = await axios.get(decryptedMessage);
-        const externalResponse = "This is a test";
-        // console.log(`Node 3 decrypted result: ${encrypt(externalResponse.data, keys.key3)}`);
-        // res.json(encrypt(externalResponse.data, keys.key3));
-        console.log(`Node 3 decrypted result: ${encrypt(externalResponse, keys.key3)}`);
-        res.json(encrypt(externalResponse, keys.key3));
-    } catch (error) {
-        res.status(500).send('Error while fetching the resource.');
-    }
+        try {
+            const response = await axios.get(message);
+            const returningData = encrypt(response.data, keys.key3)
+            socket.write(returningData);
+        } catch (error) {
+            console.error('Error fetching the URL:', error);
+            socket.write('Error fetching the URL');
+        }
+    });
 });
 
-module.exports = app
+server.listen(8003, () => {
+    console.log('Node 3 listening on port 8003');
+});

@@ -1,14 +1,13 @@
 require('dotenv').config({ path: '.env' });
+const net = require('net');
 const environments = require('./configs/environments');
 
 const node1 = require('./services/nodes/node1');
 const node2 = require('./services/nodes/node2');
 const node3 = require('./services/nodes/node3');
 
-const startRouters = () => {
-    node1.listen(environments.PORT1, () => {
-        console.log(`Node 1 listening on ${environments.HOST1} port ${environments.PORT1}`);
-    });
+const startServers = () => {
+    no
 
     node2.listen(environments.PORT2, () => {
         console.log(`Node 2 listening on ${environments.HOST2} port ${environments.PORT2}`);
@@ -19,4 +18,4 @@ const startRouters = () => {
     });
 };
 
-startRouters();
+startServers();

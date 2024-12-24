@@ -1,19 +1,9 @@
-// node2.js
-const express = require('express');
-const bodyParser = require('body-parser');
+const net = require('net');
 const crypto = require('crypto');
-const axios = require('axios');
-
-const environments = require('../../configs/environments')
 
 const keys = {
-    key1: 'key1_secret_string',
     key2: 'key2_secret_string',
-    key3: 'key3_secret_string'
 };
-
-const app = express();
-app.use(bodyParser.json());
 
 function decrypt(message, key) {
     const decipher = crypto.createDecipher('aes-256-cbc', key);
@@ -29,15 +19,28 @@ function encrypt(message, key) {
     return encrypted;
 }
 
-app.post('/send', async (req, res) => {
-    const { message } = req.body;
-    
-    const decryptedMessage = decrypt(message, keys.key2);
-    console.log(`Node 2 decrypted message: ${decryptedMessage}`);
+const server = net.createServer((socket) => {
+    socket.on('data', (data) => {
+        const message = decrypt(data.toString(), keys.key2);
+        console.log(`Node 2 received message: ${message}`);
 
-    const externalResponse = await axios.post(`http://${environments.HOST3}:${environments.PORT3}/send`, { message: decryptedMessage });
-    console.log(`Node 2 decrypted result: ${encrypt(externalResponse.data, keys.key2)}`);
-    res.json(encrypt(externalResponse.data, keys.key2));
+        // Forward the message to Node 3
+        const connection = net.createConnection({ host: 'localhost', port: 8003 }, () => {
+            connection.write(message);
+        });
+
+        connection.on('data', (data) => {
+            console.log(`Node 2 received response: ${data.toString()}`);
+            const returningData = encrypt(data.toString(), keys.key2)
+            socket.write(returningData); 
+        });
+
+        connection.on('error', (err) => {
+            console.error(err);
+        });
+    });
 });
 
-module.exports = app
+server.listen(8002, () => {
+    console.log('Node 2 listening on port 8002');
+});
