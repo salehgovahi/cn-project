@@ -2,7 +2,9 @@ const net = require('net');
 const crypto = require('crypto');
 
 const keys = {
-    key1: 'key1_secret_string',
+    key1: 'key1_secret_string_key1_secret_string',
+    key2: 'key2_secret_string_key1_secret_string',
+    key3: 'key3_secret_string_key1_secret_string'
 };
 
 function decrypt(message, key) {
@@ -31,8 +33,9 @@ const server = net.createServer((socket) => {
 
         connection.on('data', (data) => {
             console.log(`Node 1 received response: ${data.toString()}`);
-            const returningData = encrypt(data.toString(), keys.key1)
-            socket.write(returningData); 
+            const returningData = encrypt(data.toString(), keys.key1);
+            console.log(`Node 1 sent message: ${returningData}`);
+            socket.write(returningData);
         });
 
         connection.on('error', (err) => {
@@ -41,6 +44,4 @@ const server = net.createServer((socket) => {
     });
 });
 
-server.listen(8001, () => {
-    console.log('Node 1 listening on port 8001');
-});
+module.exports = server;

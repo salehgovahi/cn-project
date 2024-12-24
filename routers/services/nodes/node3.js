@@ -3,12 +3,12 @@ const crypto = require('crypto');
 const axios = require('axios');
 
 const keys = {
-    key3: 'key3_secret_string',
+    key1: 'key1_secret_string_key1_secret_string',
+    key2: 'key2_secret_string_key1_secret_string',
+    key3: 'key3_secret_string_key1_secret_string'
 };
 
 function decrypt(message, key) {
-    console.log(key);
-    
     const decipher = crypto.createDecipher('aes-256-cbc', key);
     let decrypted = decipher.update(message, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
@@ -27,9 +27,15 @@ const server = net.createServer(async (socket) => {
         const message = decrypt(data.toString(), keys.key3);
         console.log(`Node 3 received message: ${message}`);
 
+        console.log(message);
+        
+
         try {
             const response = await axios.get(message);
+            console.log(response);
+            
             const returningData = encrypt(response.data, keys.key3)
+            console.log(`Node 3 sent message: ${returningData}`);
             socket.write(returningData);
         } catch (error) {
             console.error('Error fetching the URL:', error);
@@ -38,6 +44,4 @@ const server = net.createServer(async (socket) => {
     });
 });
 
-server.listen(8003, () => {
-    console.log('Node 3 listening on port 8003');
-});
+module.exports = server

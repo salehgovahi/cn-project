@@ -7,14 +7,16 @@ const node2 = require('./services/nodes/node2');
 const node3 = require('./services/nodes/node3');
 
 const startServers = () => {
-    no
-
-    node2.listen(environments.PORT2, () => {
-        console.log(`Node 2 listening on ${environments.HOST2} port ${environments.PORT2}`);
+    node1.listen(8001, () => {
+        console.log('Node 1 listening on port 8001');
     });
 
-    node3.listen(environments.PORT3, () => {
-        console.log(`Node 3 listening on ${environments.HOST3} port ${environments.PORT3}`);
+    node2.listen(8002, () => {
+        console.log(`Node 2 listening on port 8002`);
+    });
+
+    node3.listen(8003, () => {
+        console.log(`Node 3 listening on port 8003`);
     });
 };
 

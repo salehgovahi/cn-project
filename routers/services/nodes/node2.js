@@ -2,7 +2,9 @@ const net = require('net');
 const crypto = require('crypto');
 
 const keys = {
-    key2: 'key2_secret_string',
+    key1: 'key1_secret_string_key1_secret_string',
+    key2: 'key2_secret_string_key1_secret_string',
+    key3: 'key3_secret_string_key1_secret_string'
 };
 
 function decrypt(message, key) {
@@ -21,26 +23,30 @@ function encrypt(message, key) {
 
 const server = net.createServer((socket) => {
     socket.on('data', (data) => {
+        // Decrypt the incoming data using key2
         const message = decrypt(data.toString(), keys.key2);
         console.log(`Node 2 received message: ${message}`);
 
-        // Forward the message to Node 3
+        // Forward the decrypted message to Node 3
         const connection = net.createConnection({ host: 'localhost', port: 8003 }, () => {
             connection.write(message);
         });
 
-        connection.on('data', (data) => {
-            console.log(`Node 2 received response: ${data.toString()}`);
-            const returningData = encrypt(data.toString(), keys.key2)
-            socket.write(returningData); 
+        connection.on('data', (dataFromNode3) => {
+            // Decrypt the response from Node 3 using key3
+            const responseFromNode3 = decrypt(dataFromNode3.toString(), keys.key3);
+            console.log(`Node 2 received response from Node 3: ${responseFromNode3}`);
+
+            // Encrypt the response before sending back to the client
+            const returningData = encrypt(responseFromNode3, keys.key2); // Encrypt for original sender
+            console.log(`Node 2 sent message back to client: ${returningData}`);
+            socket.write(returningData);
         });
 
         connection.on('error', (err) => {
-            console.error(err);
+            console.error('Error connecting to Node 3:', err);
         });
     });
 });
 
-server.listen(8002, () => {
-    console.log('Node 2 listening on port 8002');
-});
+module.exports = server;

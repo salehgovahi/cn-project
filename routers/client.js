@@ -2,12 +2,12 @@ const net = require('net');
 const crypto = require('crypto');
 
 const keys = {
-    key1: 'key1_secret_string',
-    key2: 'key2_secret_string',
-    key3: 'key3_secret_string'
+    key1: 'key1_secret_string_key1_secret_string',
+    key2: 'key2_secret_string_key1_secret_string',
+    key3: 'key3_secret_string_key1_secret_string'
 };
 
-function decrypt(message, key) {
+function decrypt(message, key) {    
     console.log(key);
     
     const decipher = crypto.createDecipher('aes-256-cbc', key);
@@ -24,7 +24,7 @@ function encrypt(message, key) {
 }
 
 async function main() {
-    const destinationUrl = 'https://google.com'; // Change to your desired URL
+    const destinationUrl = 'https://soft98.ir'; // Change to your desired URL
     const encryptedMessage = encrypt(encrypt(encrypt(destinationUrl, keys.key3), keys.key2), keys.key1);
 
     const client = net.createConnection({ host: 'localhost', port: 8001 }, () => {
@@ -35,8 +35,9 @@ async function main() {
         console.log("hell");
         
         console.log(data.toString());
-        console.log("hell");
-        
+        console.log("hellssss");
+        result = decrypt(data.toString(), keys.key1)
+        console.log("hellssfffs");
         result = decrypt(decrypt(decrypt(data.toString(), keys.key1), keys.key2), keys.key3);
         console.log(`Response from Server: ${result}`);
     });
