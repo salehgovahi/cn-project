@@ -81,13 +81,27 @@ async function main() {
                     const decryptedTwice = decrypt(decryptedKey, routerKey2);
                     const decryptedThird = decrypt(decryptedTwice, routerKey3);
 
-                    const encryptedKey = encrypt("Hello Server", routerKey3);
+                    let request = {
+                        'address': 'http://127.0.0.1:3000/players/ready',
+                        'ip': "127.0.0.1",
+                        'socket': '8080'
+                    }
+
+                    const messageToSend = JSON.stringify(request)
+                    const encryptedKey = encrypt(messageToSend, routerKey3);
                     const encryptedTwice = encrypt(encryptedKey, routerKey2);
                     const encryptedThird = encrypt(encryptedTwice, routerKey1);
                     const serverMessageRouter3 = createMessage('client', 'server', 'server', encryptedThird);
                     client.write(serverMessageRouter3)
                 }
-            // case 'server_response':
+            case 'server_response':
+                if (response.sender === 'server') {
+                    const decryptedKey = decrypt(response.payload, routerKey1);
+                    const decryptedTwice = decrypt(decryptedKey, routerKey2);
+                    const decryptedThird = decrypt(decryptedTwice, routerKey3);
+
+                    console.log(decryptedThird);
+                }
                 
         }
     });

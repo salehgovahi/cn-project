@@ -1,5 +1,6 @@
 const net = require('net');
 const crypto = require('crypto');
+const axios = require('axios');
 
 let routerKey = null;
 
@@ -42,7 +43,7 @@ const server = net.createServer((socket) => {
         if (incomingMessage.messageType === 'key' && incomingMessage.receiver === 'router3') {
             routerKey = incomingMessage.payload;
             console.log(`Router 3 received valid key: ${routerKey}`);
-            const encryptedPayload = encrypt('valid', routerKey)
+            const encryptedPayload = encrypt('valid', routerKey);
             const responseMessage = createMessage('router3', incomingMessage.sender, 'key_response', encryptedPayload);
             socket.write(responseMessage);
         } else if (incomingMessage.receiver === 'server') {
@@ -50,8 +51,31 @@ const server = net.createServer((socket) => {
                 const decryptedMessage = decrypt(incomingMessage.payload, routerKey);
                 console.log(`Router 3 decrypted message: ${decryptedMessage}`);
 
-                console.log("End");
-                
+                const request = JSON.parse(decryptedMessage);
+
+                const data = {
+                    ip: request.ip,
+                    socket: request.socket,
+                    router_socket: 8003
+                };
+
+                const requestToServer = axios
+                    .post(request.address, data)
+                    .then((response) => {
+                        const encryptedPayload = encrypt(JSON.stringify(response.data), routerKey);
+                        const responseMessage = createMessage(
+                            'server',
+                            incomingMessage.sender,
+                            'server_response',
+                            encryptedPayload
+                        );
+                        socket.write(responseMessage);
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                    });
+
+                console.log('End');
             } else {
                 console.error('Router key not set. Cannot decrypt message.');
             }
