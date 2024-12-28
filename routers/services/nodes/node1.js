@@ -1,11 +1,7 @@
 const net = require('net');
 const crypto = require('crypto');
 
-const keys = {
-    key1: 'key1_secret_string_key1_secret_string',
-    key2: 'key2_secret_string_key1_secret_string',
-    key3: 'key3_secret_string_key1_secret_string'
-};
+let routerKey = null;
 
 function decrypt(message, key) {
     const decipher = crypto.createDecipher('aes-256-cbc', key);
@@ -21,27 +17,86 @@ function encrypt(message, key) {
     return encrypted;
 }
 
+function createMessage(sender, receiver, messageType, payload) {
+    const version = '1';
+    return Buffer.from(`${version}|${sender}|${receiver}|${messageType}|${payload}`);
+}
+
+function parseMessage(buffer) {
+    const messageString = buffer.toString();
+    const parts = messageString.split('|');
+    return {
+        version: parts[0],
+        sender: parts[1],
+        receiver: parts[2],
+        messageType: parts[3],
+        payload: parts.slice(4).join('|')
+    };
+}
+
 const server = net.createServer((socket) => {
     socket.on('data', (data) => {
-        const message = decrypt(data.toString(), keys.key1);
-        console.log(`Node 1 received message: ${message}`);
+        const incomingMessage = parseMessage(data);
+        console.log(`Router 1 received message: ${incomingMessage}`);
 
-        // Forward the message to Node 2
-        const connection = net.createConnection({ host: 'localhost', port: 8002 }, () => {
-            connection.write(message);
-        });
+        if (incomingMessage.messageType === 'key' && incomingMessage.receiver === 'router1') {
+            routerKey = incomingMessage.payload;
+            console.log(`Router 1 received valid key: ${routerKey}`);
+            const encryptedPayload = encrypt('valid', routerKey);
+            const responseMessage = createMessage('router1', incomingMessage.sender, 'key_response', encryptedPayload);
+            socket.write(responseMessage);
+        } else if (
+            incomingMessage.receiver === 'router3' ||
+            incomingMessage.receiver === 'router2' ||
+            incomingMessage.receiver === 'server'
+        ) {
+            if (routerKey) {
+                const decryptedMessage = decrypt(incomingMessage.payload, routerKey);
+                console.log(`Router 1 decrypted message for Router 2: ${decryptedMessage}`);
 
-        connection.on('data', (data) => {
-            console.log(`Node 1 received response: ${data.toString()}`);
-            const returningData = encrypt(data.toString(), keys.key1);
-            console.log(`Node 1 sent message: ${returningData}`);
-            socket.write(returningData);
-        });
+                const connectionToRouter2 = net.createConnection({ host: 'localhost', port: 8002 }, () => {
+                    const outgoingMessage = createMessage(
+                        incomingMessage.sender,
+                        incomingMessage.receiver,
+                        incomingMessage.messageType,
+                        decryptedMessage
+                    );
+                    connectionToRouter2.write(outgoingMessage);
+                });
 
-        connection.on('error', (err) => {
-            console.error(err);
-        });
+                connectionToRouter2.on('data', (dataFromRouter2) => {
+                    console.log('Router1 received encrypted message from Router 2');
+
+                    const responseFromRouter2 = parseMessage(dataFromRouter2);
+                    const encryptedPayload = encrypt(responseFromRouter2.payload, routerKey); // Decrypt payload from Router 2 for further processing
+
+                    // Ensure that the response from Router 2 is correctly formatted
+                    const backToClientMessage = createMessage(
+                        responseFromRouter2.sender,
+                        responseFromRouter2.receiver,
+                        responseFromRouter2.messageType,
+                        encryptedPayload // Use decrypted payload
+                    );
+
+                    console.log(parseMessage(backToClientMessage));
+
+                    // Log the message being sent back to the client
+                    console.log(`Sending back to client: ${backToClientMessage}`);
+                    socket.write(backToClientMessage);
+                });
+
+                connectionToRouter2.on('error', (err) => {
+                    console.error(err);
+                });
+            } else {
+                console.error('Router key not set. Cannot decrypt message.');
+            }
+        } else {
+            console.log('Unexpected message format:', incomingMessage);
+        }
     });
 });
 
-module.exports = server;
+server.listen(8001, () => {
+    console.log('Router 1 listening on port 8001');
+});
